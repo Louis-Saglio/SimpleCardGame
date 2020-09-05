@@ -1,9 +1,25 @@
 package saglio.simplecardgame.game
 
-import kotlinx.atomicfu.locks.withLock
-import kotlinx.serialization.*
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.encoding.Decoder
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.collections.List
+import kotlin.collections.MutableList
+import kotlin.collections.MutableMap
+import kotlin.collections.first
+import kotlin.collections.last
+import kotlin.collections.map
+import kotlin.collections.maxBy
+import kotlin.collections.mutableListOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.random
+import kotlin.collections.set
+import kotlin.collections.sum
+import kotlin.collections.sumBy
+import kotlin.concurrent.withLock
 
 class RuleViolationException: Exception()
 
@@ -93,13 +109,10 @@ class Card(val color: Color, val name: String, val value: Int) {
         return "Card(color=$color, name='$name', value=$value)"
     }
 
+    @ExperimentalSerializationApi
     @Serializer(forClass = Card::class)
     companion object : KSerializer<Card> {
-        @ImplicitReflectionSerializer
         override fun deserialize(decoder: Decoder): Card {
-            val data = decoder.decode<JsonObject>()
-//            println(data)
-//            if ("color" !in data || "name" !in data)
             return buildDefaultDeck().random()
         }
     }

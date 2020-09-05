@@ -1,21 +1,20 @@
 package saglio.simplecardgame
 
-import io.ktor.application.Application
-import io.ktor.application.call
-import io.ktor.application.install
-import io.ktor.features.ContentNegotiation
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
-import io.ktor.response.respondText
+import io.ktor.application.*
+import io.ktor.features.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.get
 import io.ktor.routing.post
+import io.ktor.routing.route
 import io.ktor.routing.routing
-import io.ktor.serialization.json
+import io.ktor.serialization.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import saglio.simplecardgame.game.Card
+import saglio.simplecardgame.game.Game
+import saglio.simplecardgame.game.Player
 import saglio.simplecardgame.game.buildDefaultDeck
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -31,6 +30,14 @@ class CardIdentifier(val name: String, val color: String) {
 }
 
 
+class GameWrapper() {
+    val players = mutableListOf<Player>()
+    var game: Game? = null
+}
+
+val games = mutableListOf<GameWrapper>()
+
+
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.simpleCardGame(testing: Boolean = false) {
@@ -40,6 +47,12 @@ fun Application.simpleCardGame(testing: Boolean = false) {
     }
 
     routing {
+        route("/game") {
+            get {
+                val newGame = GameWrapper()
+                games.add(newGame)
+            }
+        }
         get("/") {
             call.respondText("HELLO WORLD!", contentType = ContentType.Text.Plain)
         }
@@ -59,7 +72,7 @@ fun Application.simpleCardGame(testing: Boolean = false) {
                 )
             } else {
                 @Suppress("EXPERIMENTAL_API_USAGE")
-                call.respond(Json.stringify(Card.serializer(), card))
+                call.respond(Json.encodeToString(Card.serializer(), card))
             }
         }
     }
