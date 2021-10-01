@@ -23,16 +23,15 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 val deck = buildDefaultDeck()
 
 @Serializable
-class CardIdentifier(val name: String, val color: String) {
+class GetGameRequestPayload(val name: String, val color: String, val gameIndex: Int) {
     fun getCard(): Card? {
         return deck.find { it.color.name == color && it.name == name }
     }
 }
 
 
-class GameWrapper() {
+class GameWrapper(val game: Game) {
     val players = mutableListOf<Player>()
-    var game: Game? = null
 }
 
 val games = mutableListOf<GameWrapper>()
@@ -49,8 +48,7 @@ fun Application.simpleCardGame(testing: Boolean = false) {
     routing {
         route("/game") {
             get {
-                val newGame = GameWrapper()
-                games.add(newGame)
+                createNewGameController()
             }
         }
         get("/") {
@@ -58,19 +56,21 @@ fun Application.simpleCardGame(testing: Boolean = false) {
         }
 
         post("/play") {
-            val cardIdentifier = try {
-                call.receive<CardIdentifier>()
+            val payload = try {
+                call.receive<GetGameRequestPayload>()
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.BadRequest, e.message ?: "")
                 return@post
             }
-            val card = cardIdentifier.getCard()
+            val card = payload.getCard()
+            val game = games[payload.gameIndex]
             if (card == null) {
                 call.respond(
                     HttpStatusCode.BadRequest,
-                    "There is no card whose color is ${cardIdentifier.color} and name is ${cardIdentifier.name}"
+                    "There is no card whose color is ${payload.color} and name is ${payload.name}"
                 )
             } else {
+                game.game.play(card)
                 @Suppress("EXPERIMENTAL_API_USAGE")
                 call.respond(Json.encodeToString(Card.serializer(), card))
             }
@@ -78,3 +78,7 @@ fun Application.simpleCardGame(testing: Boolean = false) {
     }
 }
 
+//fun createNewGameController(unit: Unit): Unit {
+fun createNewGameController() {
+    games.add(GameWrapper(Game()))
+}
